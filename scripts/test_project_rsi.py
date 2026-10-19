@@ -57,6 +57,15 @@ class GuardTests(unittest.TestCase):
         self.payload['answers'][1]['value']='approve'
         result=self.consume();self.assertTrue((self.root/'.agents/skills/learned-rejected/SKILL.md').is_file())
         self.assertEqual(result['changes'][1]['kind'],'skill')
+    def test_crlf_skill_frontmatter_is_preserved_exactly(self):
+        candidate=b'---\r\nname: learned-rejected\r\ndescription: A Windows-authored synthetic skill.\r\n---\r\nKeep this exact content.\r\n'
+        (self.run/'rejected.md').write_bytes(candidate)
+        (self.run/'manifest.json').unlink();rsi.build(self.run/'plan.json',self.run/'form.html')
+        binding=rsi.read_json(self.run/'form-binding.json')['spec']
+        self.payload.update(manifest_sha256=binding['manifest_sha256'],submission_id=binding['submission_id'])
+        self.payload['answers'][1]['value']='approve'
+        self.consume()
+        self.assertEqual((self.root/'.agents/skills/learned-rejected/SKILL.md').read_bytes(),candidate)
     def test_reused_id_cannot_change_decision(self):
         self.consume();self.payload['answers'][1]['value']='approve'
         with self.assertRaisesRegex(ValueError,'reused'):self.consume()

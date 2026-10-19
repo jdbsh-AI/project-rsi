@@ -61,7 +61,7 @@ def lesson(text,marker):
 
 def validate_candidate(path,data,policy=None):
     if path.endswith('/SKILL.md'):
-        header=re.match(r'\A---\n(.*?)\n---(?:\n|$)',data.decode(),re.S)
+        header=re.match(r'\A---\r?\n(.*?)\r?\n---(?:\r?\n|$)',data.decode(),re.S)
         if not header:raise ValueError('skill frontmatter required')
         name=re.search(r'^name:\s*([a-z0-9-]+)\s*$',header[1],re.M)
         if not name or name[1]!=skill_name(path,policy or policy_for('codex')):raise ValueError('skill name must match directory')
