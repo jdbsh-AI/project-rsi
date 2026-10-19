@@ -10,6 +10,7 @@ import hmac
 import json
 import os
 import secrets
+import socketserver
 import sys
 import threading
 import uuid
@@ -78,6 +79,12 @@ class ReviewServer(HTTPServer):
 
     allow_reuse_address = False
     request_queue_size = 4
+
+    def server_bind(self):
+        # HTTPServer normally reverse-resolves the bind address. This is a local
+        # capability URL; DNS is unnecessary and can stall on CI/VPN networks.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
 
     def __init__(self, run, port=0, once=False, event_stream=None):
         raw_run = Path(run)

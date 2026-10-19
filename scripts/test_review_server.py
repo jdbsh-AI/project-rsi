@@ -254,6 +254,12 @@ class ReviewHTTPTests(unittest.TestCase):
         self.assertEqual(status, 200, body)
         self.assertEqual(json.loads(body)['thread_id'], 'synthetic-thread')
 
+    def test_loopback_startup_never_resolves_a_hostname(self):
+        with patch('socket.getfqdn', side_effect=AssertionError('loopback server must not query DNS')):
+            self.start()
+            status, _, body = self.request('GET')
+        self.assertEqual(status, 200, body)
+
     def test_once_process_returns_after_real_http_submission(self):
         command = [sys.executable, str(Path(review_server.__file__).resolve()),
                    '--run', str(self.run), '--once']
@@ -263,7 +269,10 @@ class ReviewHTTPTests(unittest.TestCase):
         reader = threading.Thread(target=lambda: lines.put(process.stdout.readline()), daemon=True)
         reader.start()
         try:
-            first_line = lines.get(timeout=5)
+            try:
+                first_line = lines.get(timeout=20)
+            except queue.Empty:
+                self.fail('server did not produce its startup event within 20 seconds; child status: '+str(process.poll()))
             self.assertTrue(first_line, 'server exited before startup event')
             event = json.loads(first_line)
             self.assertEqual(event['type'], 'review_server_started')
