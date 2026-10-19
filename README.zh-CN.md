@@ -1,5 +1,7 @@
 # Project RSI
 
+![Project RSI：复盘错误、提出改进，等你确认后才更新项目规则和技能。](assets/project-rsi-hero.gif)
+
 [English](README.md) · [简体中文](README.zh-CN.md)
 
 **让 Agent 从项目里真实犯过的错误中改进，但每次采纳都先由你确认。**

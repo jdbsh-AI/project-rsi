@@ -1,5 +1,7 @@
 # Project RSI
 
+![Project RSI: review mistakes, propose a lesson, wait for your approval, then update project rules and skills.](assets/project-rsi-hero.gif)
+
 [English](README.md) · [简体中文](README.zh-CN.md)
 
 **Turn real project mistakes into better project instructions and skills—with human approval before adoption.**
