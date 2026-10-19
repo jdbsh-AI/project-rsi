@@ -44,7 +44,7 @@ Project-relative paths in configuration and plans use forward slashes on every p
 Clone the repository, enter it, and initialize the project you want to improve:
 
 ```sh
-git clone https://github.com/jbwu091-jdbsh/project-rsi.git
+git clone https://github.com/jdbsh-AI/project-rsi.git
 cd project-rsi
 python3 scripts/project_rsi.py profiles
 python3 scripts/project_rsi.py init \

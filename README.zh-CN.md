@@ -44,7 +44,7 @@ py -3 scripts/project_rsi.py init --project "C:/work/my-project" --harness workb
 先下载仓库，在仓库目录内运行初始化命令：
 
 ```sh
-git clone https://github.com/jbwu091-jdbsh/project-rsi.git
+git clone https://github.com/jdbsh-AI/project-rsi.git
 cd project-rsi
 python3 scripts/project_rsi.py profiles
 python3 scripts/project_rsi.py init \
