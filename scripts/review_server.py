@@ -260,9 +260,9 @@ class ReviewHandler(BaseHTTPRequestHandler):
             return
         self.request_body_handled = True
         value = _single_header(self.headers, 'Content-Length')
-        if not value or len(value) > 8 or not value.isascii() or not value.isdecimal():
-            return
-        amount = min(int(value), BODY_LIMIT + 1)
+        amount = BODY_LIMIT + 1
+        if value and len(value) <= 8 and value.isascii() and value.isdecimal():
+            amount = min(int(value), amount)
         if not amount:
             return
         timeout = self.connection.gettimeout()

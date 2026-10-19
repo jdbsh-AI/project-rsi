@@ -203,17 +203,21 @@ class ReviewHTTPTests(unittest.TestCase):
             def __init__(self):self.timeout = 5
             def gettimeout(self):return self.timeout
             def settimeout(self, value):self.timeout = value
-        handler = object.__new__(review_server.ReviewHandler)
-        handler.command = 'POST';handler.request_body_handled = False
         from email.message import Message
-        handler.headers = Message();handler.headers['Content-Length'] = '99999999'
-        handler.connection = Connection()
-        handler.rfile = io.BytesIO(b'x' * (review_server.BODY_LIMIT + 50))
-        handler.discard_rejected_body()
-        self.assertEqual(handler.rfile.tell(), review_server.BODY_LIMIT + 1)
-        self.assertEqual(handler.connection.gettimeout(), 5)
-        handler.discard_rejected_body()
-        self.assertEqual(handler.rfile.tell(), review_server.BODY_LIMIT + 1)
+        for length in ['99999999', 'invalid', '9' * 100, None, '0']:
+            with self.subTest(content_length=length):
+                handler = object.__new__(review_server.ReviewHandler)
+                handler.command = 'POST';handler.request_body_handled = False
+                handler.headers = Message()
+                if length is not None:handler.headers['Content-Length'] = length
+                handler.connection = Connection()
+                handler.rfile = io.BytesIO(b'x' * (review_server.BODY_LIMIT + 50))
+                handler.discard_rejected_body()
+                expected = 0 if length == '0' else review_server.BODY_LIMIT + 1
+                self.assertEqual(handler.rfile.tell(), expected)
+                self.assertEqual(handler.connection.gettimeout(), 5)
+                handler.discard_rejected_body()
+                self.assertEqual(handler.rfile.tell(), expected)
 
     def test_content_type_oversize_and_transfer_encoding_rejected(self):
         self.start()
