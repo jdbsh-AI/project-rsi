@@ -58,6 +58,8 @@ Replace the absolute path and harness with your own. Available harness profiles 
 
 `init` creates `.project-rsi/config.json`. With `--install-skill`, it also copies the skill into the selected profile's first skill directory, for example `.claude/skills/project-rsi/`. It **does not edit the project's instruction files**. Start or refresh your harness as its skill discovery requires, then ask it to use Project RSI. In clients that expose skills as slash commands, the command is usually `/project-rsi`; Codex can also invoke `$project-rsi`.
 
+The installation command cannot start every harness or make it load the skill. It reports `schedule_onboarding` status and a `next_step`; when an agent first actually loads this skill in an interactive conversation, the agent checks the private setup state and proactively offers scheduled reviews. You choose whether to enable them and, if so, the frequency, time or interval start, and timezone. No timer or default review time is installed. See [optional scheduled reviews](#optional-scheduled-reviews).
+
 If your project uses different names or directories, declare them explicitly. Paths below are relative to the target project:
 
 ```sh
@@ -155,13 +157,19 @@ DSH initialization uses an existing `CLAUDE.md` when `AGENTS.md` is absent. Work
 
 The native transport requires the conversation host's `window.openai.sendFollowUpMessage` API and checks for it at runtime. An ordinary browser tab does not have that API. The local transport works through an explicit server command and returns its result to the waiting process; it does not inject messages into arbitrary running chats. Claude Channels, OpenCode's session API, and Cursor's SDK are possible host-specific integration points, but this release does not implement those bridges. Unsupported delivery must be reported clearly, without a success claim or an undocumented socket/second CLI writer workaround.
 
-## Review every evening at 22:00
+## Optional scheduled reviews
 
-Scheduling belongs to your harness or another scheduler you explicitly authorize. Installing this skill does not enable a timer. Ask a scheduling-capable host to run a prompt such as:
+On the first actual interactive use, the agent checks the project's saved setup state and current conversation before asking:
 
-> Every day at 22:00 in my chosen timezone, use Project RSI to review this project's work since the previous review. Save evidence, proposed changes, diffs, and permitted probe results in a private run. Present a readable HTML review with plain-language explanations. Do not adopt changes until I confirm the specific proposals. Handle a submitted review as soon as its supported transport delivers it; do not wait for the next scheduled review. Return a clear receipt after processing. Stay quiet when there is no new actionable finding.
+> Would you like scheduled project reviews? Set up / No thanks / Later.
 
-Specify the timezone and exact project when creating the schedule. Scheduled reviews propose changes; a timer never constitutes approval. Immediate submission and the evening review cadence are independent.
+If you choose to enable them, you decide the frequency—daily, weekdays, weekly, or a custom cadence—plus the execution time or interval start and timezone. The agent asks only for missing details. If you have already supplied a complete preference, it proceeds without repeating the questions. There is no default time or timezone.
+
+Declining or choosing later is remembered in the private `.project-rsi/schedule-setup.json` file, so subsequent skill uses do not repeatedly ask. You can reopen setup by explicitly asking to set up or change scheduled reviews. A scheduled background run never starts this first-use conversation.
+
+Before creating anything, the agent checks the current host's scheduling capability and reads any existing schedule for this project. It reuses a matching schedule and reads back the result to avoid duplicates. The state helper records your preferences and host receipts; it does not create jobs, and its saved record does not prove that a host schedule is still active. The eight harness profiles describe file integration, not universal native scheduling support. If the current host has no supported scheduler, the agent explains that and continues with manual reviews; it does not install `cron` or `launchd`, choose a time for you, or claim scheduling succeeded.
+
+Installation and agreement to a timer do not authorize automatic changes to project instructions or skills. Scheduled reviews collect bounded evidence, prepare proposals and an HTML review, and wait for approval of the specific changes. Submitted decisions are processed when their supported transport delivers them, independently of the review cadence. Preserve your notification preference; without a request for routine updates, stay quiet when there is no new actionable finding. See [the scheduling guide](references/scheduling.md) for the agent workflow and private state commands.
 
 ## Local execution and data boundaries
 

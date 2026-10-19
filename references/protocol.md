@@ -6,6 +6,8 @@ Python 3.9+; the runtime uses only the standard library. Keep run files private 
 
 `init --project /absolute/project --harness claude --install-skill` records `.project-rsi/config.json` and installs this skill under the selected profile. It writes no project instruction lesson and creates no schedule. Existing skill destinations are not overwritten. Without `--install-skill`, only the configuration is created.
 
+The initialization result also includes read-only `schedule_onboarding` status and a `next_step` for actual skill activation. Optional scheduling choices and host receipts use a separate private `.project-rsi/schedule-setup.json` file, leaving the frozen run configuration unchanged. The helper does not create or verify a host task; follow [the scheduling setup flow](scheduling.md) on first interactive activation.
+
 ```json
 {
   "schema": 1,

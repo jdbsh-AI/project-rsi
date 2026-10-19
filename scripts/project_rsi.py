@@ -281,7 +281,10 @@ def initialize(root,harness='auto',instruction_files=None,skill_roots=None,trans
                         if file.is_symlink():raise ValueError('symlink in skill source')
                         atomic(destination/file.relative_to(source),file.read_bytes())
     if not path.exists():atomic(path,encoded(config))
-    return {'status':'INITIALIZED','config':str(path),'harness':name,'instruction_files':config['instruction_files'],'skill_directory':str(destination) if install_skill else None,'active_instructions_written':0}
+    from schedule_setup import status as schedule_status
+    onboarding=schedule_status(root)
+    next_step='Activate Project RSI in your harness and follow schedule_onboarding.next_action ('+onboarding['next_action']+'). Respect saved choices; scheduling requires user preferences and supported host tools.'
+    return {'status':'INITIALIZED','config':str(path),'harness':name,'instruction_files':config['instruction_files'],'skill_directory':str(destination) if install_skill else None,'active_instructions_written':0,'schedule_onboarding':onboarding,'next_step':next_step}
 
 def demo(directory,harness='generic'):
     directory=directory.resolve()

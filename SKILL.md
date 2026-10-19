@@ -2,7 +2,7 @@
 name: project-rsi
 description: Review project execution mistakes, propose and probe small instruction or skill improvements across coding harnesses, collect readable HTML approval, and apply confirmed changes with a clear receipt. Use for project retrospectives and recurring improvement requests.
 metadata:
-  version: "0.2.2"
+  version: "0.3.0"
 ---
 
 # Project RSI
@@ -14,6 +14,18 @@ Turn verified execution mistakes into small, reviewable project improvements. Bo
 Read [harness compatibility](references/harnesses.md) when installing or selecting a rules target. Use `scripts/project_rsi.py init` to declare the harness, project-local instruction files, and skill roots. Profiles cover Codex, Claude Code, Gemini CLI, Cursor, Copilot, OpenCode, DSH, and WorkBuddy. Defaults include `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `CODEBUDDY.md`, Cursor `.mdc`, and Copilot instructions. Custom Markdown filenames and nested paths are supported. Inspect what the harness actually loads, including overrides and custom settings; filename detection alone does not prove loading. Select one appropriate target for a lesson rather than updating every tool's rules.
 
 Initialization can install this skill when explicitly requested; it does not add lessons or alter project instructions. Installation does not create a schedule. Keep credentials, global harness settings, and production runtimes outside the adaptation scope.
+
+## First interactive activation: offer scheduling
+
+On the first interactive activation in a project, **proactively ask whether the user wants scheduled reviews**. Do not wait for them to discover a README example or explicitly request a timer. First read `scripts/schedule_setup.py status --project /absolute/project` and inspect existing matching host tasks when that capability is available. Read [scheduling setup](references/scheduling.md) for the complete flow and state commands. Merely copying files cannot start an agent; this step runs when the host actually loads and invokes this skill.
+
+Ask in the user's language, for example: “Would you like scheduled project reviews? Set them up, no thanks, or decide later?” Do not preselect acceptance or choose a default cadence or time. If they opt in, collect **frequency, execution time or interval start, and timezone**, asking only for missing details. Use an already explicit user request instead of asking the same questions again. Continue an independently requested manual review while optional setup is pending.
+
+Use the host's supported scheduler only after the actual user response supplies enough detail and authorization. Check existing project bindings first; reuse or update a matching task rather than creating another. Read back the actual schedule, timezone, target project/conversation, and enabled state before recording success. Report the task ID and the human-readable schedule. Installation, a saved preference, or a helper status does not prove a host task exists.
+
+Record declines, deferrals, complete preferences, and host results privately with the setup helper. Respect a saved decline/later choice without asking every session. On subsequent interactive uses, verify a recorded task when possible; do not recreate it merely because a lookup is unavailable. User-initiated schedule changes can reopen setup. Unattended scheduled invocations skip onboarding entirely and never treat silence as opt-in.
+
+If no authorized scheduler is available, explain the limitation and continue with manual reviews; record the unsupported result after an opt-in. Do not silently install cron, launchd, a daemon, or another scheduling service. The setup helper only records state and cannot create any job. Scheduling permission never approves AGENTS or skill changes; each adoption still needs the specific proposal approval.
 
 ## Review and propose
 
@@ -49,7 +61,7 @@ Journal planned writes, backups, and hashes before changing targets, then read b
 
 ## Scheduling, validation, and sharing
 
-Create or update a recurring schedule only when requested, using the host scheduler and project timezone. Preserve cadence and notification preferences. Scheduled reviews propose changes; they never approve them. Submission handling uses the immediate native callback, independently of review time.
+Offer scheduling during first interactive activation as described above; create or update a recurring task only after the user's explicit choice and schedule details. Preserve existing cadence and notification preferences unless the user changes them. Scheduled reviews propose changes; they never approve them. Submission handling uses the supported immediate transport, independently of review time.
 
 Use `demo` to create a new isolated project before a real UI test. Synthetic plans require a fixture identity marker; never use a test click as approval for real changes. Verify approve, reject, and multiline note-to-revise paths and read back the exact target hashes. For native delivery, also verify a message really arrives in the current conversation. For local delivery, verify browser receipt and command exit, then have the waiting assistant report the result. Record each transport's coverage separately; see [callback acceptance](references/callback.md).
 
