@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project RSI"
+  short_description: "Project reviews with readable approval and change receipts"
+  default_prompt: "Use $project-rsi to review project mistakes and propose checked improvements for my approval."

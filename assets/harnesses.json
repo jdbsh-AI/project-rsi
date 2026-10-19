@@ -1,0 +1,11 @@
+{
+  "codex": {"instruction_files": ["AGENTS.md"], "skill_roots": [".agents/skills", ".codex/skills"], "transport": "native"},
+  "claude": {"instruction_files": ["CLAUDE.md"], "skill_roots": [".claude/skills"], "transport": "local"},
+  "gemini": {"instruction_files": ["GEMINI.md"], "skill_roots": [".gemini/skills", ".agents/skills"], "transport": "local"},
+  "cursor": {"instruction_files": [".cursor/rules/project-rsi.mdc"], "skill_roots": [".cursor/skills"], "transport": "local"},
+  "copilot": {"instruction_files": [".github/copilot-instructions.md"], "skill_roots": [".github/skills"], "transport": "local"},
+  "opencode": {"instruction_files": ["AGENTS.md"], "skill_roots": [".opencode/skills", ".agents/skills"], "transport": "local"},
+  "dsh": {"instruction_files": ["AGENTS.md"], "skill_roots": [".dsh/skills", ".agents/skills"], "transport": "local"},
+  "workbuddy": {"instruction_files": ["CODEBUDDY.md"], "skill_roots": [".codebuddy/skills"], "transport": "local"},
+  "generic": {"instruction_files": ["AGENTS.md"], "skill_roots": [".agents/skills"], "transport": "local"}
+}

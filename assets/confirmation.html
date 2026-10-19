@@ -1,0 +1,130 @@
+<div id="__RSI_ROOT_ID__">
+  <h3 data-heading>项目改进待确认</h3>
+  <p data-intro></p>
+  <p class="text-small" data-progress aria-live="polite"></p>
+  <div data-items></div>
+  <p class="text-small" data-summary></p>
+  <div class="viz-controls">
+    <button type="button" class="btn btn-primary" data-submit disabled>提交我的决定</button>
+  </div>
+  <p data-status role="status" aria-live="polite"></p>
+</div>
+<style>
+#__RSI_ROOT_ID__ .rsi-field{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:14px 0}
+#__RSI_ROOT_ID__ .rsi-note{display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;min-height:88px;padding:12px 14px;resize:vertical;font:inherit;font-size:16px;line-height:1.65;color:var(--foreground);background:var(--background);border:1px solid var(--input);border-radius:8px}
+#__RSI_ROOT_ID__ .rsi-text{white-space:pre-wrap;overflow-wrap:anywhere}
+#__RSI_ROOT_ID__ details{margin:12px 0}
+#__RSI_ROOT_ID__ .rsi-item{margin:20px 0}
+</style>
+<script>
+(() => {
+  const spec=__RSI_FORM_JSON__;
+  const root=document.getElementById('__RSI_ROOT_ID__');
+  const submit=root.querySelector('[data-submit]');
+  const status=root.querySelector('[data-status]');
+  const fields=[];
+  const local=spec.transport==='local';
+  let lastReceipt=null;
+  let phase='draft';
+  const options=[['approve','同意修改'],['reject','不同意修改'],['change','按备注调整'],['explain','先解释一下']];
+  const make=(tag,text,className)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;};
+  root.querySelector('[data-heading]').textContent=spec.test_mode?'Project RSI 隔离端到端测试':'项目改进待确认';
+  root.querySelector('[data-intro]').textContent=spec.test_mode?'本表单只修改隔离样例，不批准真实项目变更。':local?'逐项选择，提交后立即处理，并在本页显示修改回执。':'逐项选择，证据和完整拟改内容可展开。提交后立即在本对话处理。';
+  if(spec.test_mode)submit.textContent='提交隔离测试决定';
+  let shortcut=null;
+  if(spec.test_mode&&spec.test_choices){
+    shortcut=make('button','使用测试方案并提交','btn');shortcut.type='button';
+    const testControls=make('div',undefined,'viz-controls');testControls.append(shortcut);
+    const testDescription=make('p','测试方案：同意第一项、拒绝第二项、用两行中文备注要求调整第三项。','text-small');
+    root.querySelector('[data-intro]').after(testDescription,testControls);
+    shortcut.addEventListener('click',()=>{
+      if(phase!=='draft')return;
+      for(const f of fields){const value=spec.test_choices[f.item.id];const input=[...f.choices.querySelectorAll('input')].find(x=>x.value===value);if(input)input.checked=true;if(value==='change')f.note.value=spec.test_note||'Please revise this synthetic proposal.\nKeep the scope unchanged.';}
+      refresh();save();submit.click();
+    });
+  }
+  for(const item of spec.items){
+    const section=make('section',undefined,'rsi-item');
+    section.dataset.item=item.id;
+    section.append(make('h3',item.id+' · '+item.title),make('p',item.summary),make('p','影响：'+item.impact));
+    const detail=make('details');detail.append(make('summary','查看证据、具体改动和检查'));
+    detail.append(make('p',item.evidence.join('\n'),'rsi-text'));
+    for(const c of item.changes){
+      detail.append(make('p',c.path+' · '+c.operation),make('p','修改前：\n'+c.before,'rsi-text'),make('p','拟修改：\n'+c.candidate_text,'rsi-text'),make('p','检查：'+c.probe_summary));
+    }
+    section.append(detail);
+    const choices=make('div');
+    for(const [value,label] of options){
+      const line=make('label',undefined,'form-check');
+      const input=make('input',undefined,'form-check-input');input.type='radio';input.name=spec.form_id+'-'+item.id;input.value=value;
+      line.append(input,make('span',label,'form-check-label'));choices.append(line);
+    }
+    const wrap=make('div',undefined,'rsi-field');wrap.hidden=true;
+    const label=make('label','备注（可选）','form-label');
+    const note=make('textarea',undefined,'rsi-note');note.id=spec.form_id+'-'+item.id+'-note';note.rows=2;note.maxLength=2000;note.placeholder='直接写希望怎么调整，可以写长一些，也可以换行。';label.htmlFor=note.id;
+    wrap.append(label,note);section.append(choices,wrap,make('hr'));
+    root.querySelector('[data-items]').append(section);
+    fields.push({item,section,wrap,label,note,choices});
+  }
+  function rows(){return fields.map(f=>({id:f.item.id,value:f.choices.querySelector('input:checked')?.value||'',comment:f.note.value}));}
+  function refresh(){
+    const answers=rows();let complete=0;
+    root.querySelectorAll('input,textarea').forEach(control=>control.disabled=phase!=='draft');
+    fields.forEach((f,i)=>{const a=answers[i];f.wrap.hidden=!a.value;const required=['change','explain'].includes(a.value);f.label.textContent=required?'备注（必填）':'备注（可选）';if(a.value&&(!required||a.comment.trim()))complete++;});
+    root.querySelector('[data-progress]').textContent='已完成 '+complete+' / '+fields.length;
+    root.querySelector('[data-summary]').textContent=answers.map(a=>a.id+'：'+(options.find(o=>o[0]===a.value)?.[1]||'未选择')+(a.comment?'（有备注）':'')).join('；');
+    const capable=local?(location.protocol==='http:'&&location.hostname==='127.0.0.1'):typeof window.openai?.sendFollowUpMessage==='function';
+    submit.disabled=phase!=='draft'||complete!==fields.length||!capable;
+    if(shortcut)shortcut.disabled=phase!=='draft'||!capable;
+    if(!capable)status.textContent=local?'请通过 review_server.py 输出的本地地址打开此表单。':'当前页面没有原生提交入口。请在支持交互的当前对话中打开；选择和备注不会因此执行。';
+  }
+  function save(){
+    const snapshot={form_id:spec.form_id,answers:rows(),phase,receipt:lastReceipt};
+    try{if(local)sessionStorage.setItem('project-rsi:'+spec.form_id,JSON.stringify(snapshot));else window.openai?.setWidgetState?.({modelContent:{form_id:spec.form_id,phase},privateContent:snapshot})?.catch(()=>{});}catch(_){}
+  }
+  function restore(state){
+    const value=state?.privateContent||state;
+    if(value?.form_id!==spec.form_id)return;
+    for(const a of value.answers||[]){const f=fields.find(x=>x.item.id===a.id);if(!f)continue;const input=[...f.choices.querySelectorAll('input')].find(x=>x.value===a.value);if(input)input.checked=true;f.note.value=String(a.comment||'').slice(0,2000);}
+    if(value.phase==='submitted'){phase='submitted';if(local&&value.receipt)renderReceipt(value.receipt);else status.textContent='已通过原生入口提交，等待当前对话返回处理回执。';}
+  }
+  function renderReceipt(receipt){
+    lastReceipt=receipt;
+    const names={ADOPTED_STATIC_ONLY:'已采纳（后续效果待观察）',REJECTED:'已拒绝，未修改',REVISION_REQUESTED:'待按备注调整，未修改',EXPLANATION_REQUESTED:'待解释，未修改',APPROVAL_NOTES_NEED_INTERPRETATION:'同意附有备注，待解释后确认',DEFERRED_CONFLICT:'版本冲突，暂未修改'};
+    const box=make('section');box.append(make('h3',receipt.test_mode?'隔离测试回执':'修改回执'));
+    box.append(make('p','处理状态：'+receipt.status));
+    for(const item of receipt.items||[]){
+      box.append(make('p',item.id+' · '+(names[item.decision]||item.decision)));
+      if(item.comment)box.append(make('p','保留的备注：\n'+item.comment,'rsi-text'));
+      if(item.reason)box.append(make('p',item.reason,'rsi-text'));
+    }
+    for(const c of receipt.changes||[])box.append(make('p','已修改 '+c.kind+'：'+receipt.project_root+'/'+c.path,'rsi-text'));
+    if(!(receipt.changes||[]).length)box.append(make('p','没有写入任何项目规则或技能文件。'));
+    if(receipt.error)box.append(make('p',receipt.error,'rsi-text'));
+    root.querySelector('[data-receipt]')?.remove();box.dataset.receipt='true';root.append(box);
+    status.textContent=receipt.test_mode?'隔离测试处理完成。真实项目未参与本次测试。':'处理回执已返回；需要调整或解释的项目仍待助手处理。';
+  }
+  root.addEventListener('change',()=>{refresh();save();});
+  root.addEventListener('input',()=>{refresh();save();});
+  window.addEventListener('openai:set_globals',event=>{if(phase==='draft')restore(event.detail?.globals?.widgetState);refresh();});
+  submit.addEventListener('click',async()=>{
+    refresh();if(submit.disabled)return;
+    phase='sending';refresh();status.textContent=local?'正在提交并处理……':'正在向当前对话提交……';
+    const payload={schema:1,form_id:spec.form_id,run:spec.run,manifest_sha256:spec.manifest_sha256,submission_id:spec.submission_id,answers:rows()};
+    if(new TextEncoder().encode(JSON.stringify(payload)).byteLength>16384){phase='draft';status.textContent='备注内容过长，请适当缩短后提交；现有内容已保留。';save();refresh();return;}
+    const prompt=(spec.test_mode?'[PROJECT_RSI_REAL_UI_E2E] 这是用户授权的隔离端到端测试，只可处理 manifest 中的隔离样例；不得修改真实项目文件或重复采用任何真实提案。':'我提交了本次项目改进决定，请现在处理并回传具体修改位置和结果，不等待定时任务。')+'\n\nPROJECT_RSI_SUBMISSION_JSON\n'+JSON.stringify(payload)+'\n\n请先验证当前线程、manifest 及候选版本，把收到的 payload 保存到该 run 的 submission.json。若 manifest 指定项目专用应用守卫，必须遵循该守卫；否则使用 Project RSI skill 消费它。完成后返回人能读懂的修改明细，并在本 run 写 acknowledgement.json（含 submission_id、当前 thread_id、processed:true、receipt_file 和 changed_paths）。';
+    try{
+      if(local){
+        const response=await fetch('./submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),credentials:'same-origin'});
+        const receipt=await response.json();if(!response.ok)throw new Error(receipt.error||'Submission failed');
+        phase='submitted';renderReceipt(receipt);save();
+      }else{
+        await window.openai.sendFollowUpMessage({prompt,title:spec.test_mode?'提交隔离端到端测试':'提交项目改进决定'});
+        phase='submitted';status.textContent='已通过原生入口提交；处理完成后会在本对话返回明细。';save();
+      }
+    }catch(error){phase='draft';status.textContent='尚未提交成功，选择与备注已保留。可重试；不会自动批准。';save();}
+    refresh();
+  });
+  try{restore(local?JSON.parse(sessionStorage.getItem('project-rsi:'+spec.form_id)||'null'):window.openai?.widgetState);}catch(_){}refresh();
+})();
+</script>
