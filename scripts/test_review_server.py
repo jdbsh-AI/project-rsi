@@ -174,6 +174,47 @@ class ReviewHTTPTests(unittest.TestCase):
         finally:
             connection.close()
 
+    def test_fragmented_rejected_posts_return_status_without_applying(self):
+        self.start()
+        data = rsi.encoded(self.payload)
+        # Split headers/body into separate writes to exercise the Windows race
+        # where a rejected path previously closed while the body was queued.
+        for index in range(24):
+            connection = http.client.HTTPConnection('127.0.0.1', self.server.server_port, timeout=5)
+            try:
+                connection.putrequest('POST', '/wrong-token/submit')
+                connection.putheader('Content-Type', 'application/json')
+                connection.putheader('Content-Length', str(len(data)))
+                connection.putheader('Origin', self.server.origin)
+                connection.endheaders()
+                midpoint = len(data) // 2
+                connection.send(data[:midpoint])
+                connection.send(data[midpoint:])
+                response = connection.getresponse()
+                self.assertEqual(response.status, 404, index)
+                self.assertEqual(json.loads(response.read())['error'], 'unknown submission URL')
+            finally:
+                connection.close()
+        self.assertEqual((self.root / 'AGENTS.md').read_bytes(), self.original)
+        self.assertFalse((self.run / 'submissions').exists())
+
+    def test_rejection_cleanup_is_bounded_and_does_not_parse(self):
+        class Connection:
+            def __init__(self):self.timeout = 5
+            def gettimeout(self):return self.timeout
+            def settimeout(self, value):self.timeout = value
+        handler = object.__new__(review_server.ReviewHandler)
+        handler.command = 'POST';handler.request_body_handled = False
+        from email.message import Message
+        handler.headers = Message();handler.headers['Content-Length'] = '99999999'
+        handler.connection = Connection()
+        handler.rfile = io.BytesIO(b'x' * (review_server.BODY_LIMIT + 50))
+        handler.discard_rejected_body()
+        self.assertEqual(handler.rfile.tell(), review_server.BODY_LIMIT + 1)
+        self.assertEqual(handler.connection.gettimeout(), 5)
+        handler.discard_rejected_body()
+        self.assertEqual(handler.rfile.tell(), review_server.BODY_LIMIT + 1)
+
     def test_content_type_oversize_and_transfer_encoding_rejected(self):
         self.start()
         for content_type in ['text/plain', 'application/x-www-form-urlencoded', 'application/json; charset=latin1']:

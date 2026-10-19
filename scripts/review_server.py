@@ -243,12 +243,40 @@ class ReviewHandler(BaseHTTPRequestHandler):
     def setup(self):
         super().setup()
         self.connection.settimeout(5)
+        self.request_body_handled = False
 
     def log_message(self, format, *args):
         # Avoid emitting token-bearing URLs or personal decision text in logs.
         pass
 
+    def discard_rejected_body(self):
+        """Bounded cleanup before closing a rejected POST, never a submission.
+
+        Closing with a queued body can abort the connection on Windows before
+        the client receives its rejection status. This only discards bytes;
+        guards still reject the request and the connection is never reused.
+        """
+        if self.command != 'POST' or self.request_body_handled:
+            return
+        self.request_body_handled = True
+        value = _single_header(self.headers, 'Content-Length')
+        if not value or len(value) > 8 or not value.isascii() or not value.isdecimal():
+            return
+        amount = min(int(value), BODY_LIMIT + 1)
+        if not amount:
+            return
+        timeout = self.connection.gettimeout()
+        try:
+            self.connection.settimeout(1)
+            self.rfile.read(amount)
+        except (OSError, TimeoutError):
+            pass
+        finally:
+            self.connection.settimeout(timeout)
+
     def respond(self, code, data, content_type='application/json; charset=utf-8'):
+        if code >= 400:
+            self.discard_rejected_body()
         if not isinstance(data, bytes):
             data = _json_bytes(data)
         self.send_response(code)
@@ -312,6 +340,7 @@ class ReviewHandler(BaseHTTPRequestHandler):
             self.respond(413, {'error': 'submission must be between 1 byte and 16 KiB'})
             return
         try:
+            self.request_body_handled = True
             data = self.rfile.read(length)
         except TimeoutError:
             self.respond(408, {'error': 'request body timed out'})

@@ -2,7 +2,7 @@
 name: project-rsi
 description: Review project execution mistakes, propose and probe small instruction or skill improvements across coding harnesses, collect readable HTML approval, and apply confirmed changes with a clear receipt. Use for project retrospectives and recurring improvement requests.
 metadata:
-  version: "0.2.1"
+  version: "0.2.2"
 ---
 
 # Project RSI
