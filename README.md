@@ -6,6 +6,8 @@
 
 Project RSI is a portable [Agent Skill](SKILL.md) and a small Python toolkit. It helps your coding agent review what went wrong, propose a focused improvement, check it against examples, and show you an interactive HTML review. You decide what to adopt. The toolkit applies only approved changes and returns a readable receipt with the affected files and checks.
 
+**Local execution, no built-in data collection.** The shipped scripts and portable `local` approval service run on your computer. Project RSI does not add a project-data upload destination, telemetry, or a hosted collection service. Model requests and the optional native conversation bridge follow the data handling of the harness and providers you choose. Read the [privacy boundaries](#local-execution-and-data-boundaries) and [disclaimer](#disclaimer).
+
 It works with project instructions such as `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Cursor `.mdc` rules, Copilot instructions, or a project-specific filename. It does not train model weights or grant the agent new permissions.
 
 Inspired by Google Research's [Harness²](https://github.com/google-research/harness2) and its propose–probe–compose approach. This is an independent implementation; no Google source code is included.
@@ -160,6 +162,23 @@ Scheduling belongs to your harness or another scheduler you explicitly authorize
 > Every day at 22:00 in my chosen timezone, use Project RSI to review this project's work since the previous review. Save evidence, proposed changes, diffs, and permitted probe results in a private run. Present a readable HTML review with plain-language explanations. Do not adopt changes until I confirm the specific proposals. Handle a submitted review as soon as its supported transport delivers it; do not wait for the next scheduled review. Return a clear receipt after processing. Stay quiet when there is no new actionable finding.
 
 Specify the timezone and exact project when creating the schedule. Scheduled reviews propose changes; a timer never constitutes approval. Immediate submission and the evening review cadence are independent.
+
+## Local execution and data boundaries
+
+**Project RSI's Python helpers and portable local approval service run locally.** This toolkit has no built-in analytics, telemetry, crash reporting, hosted backend, or automatic upload of project content to its maintainers or another third-party collection service. It does not call a model API or ask for a model-provider API key itself.
+
+- **Local review mode:** the browser posts decisions to a token-bound `127.0.0.1` service. Evidence, candidates, plans, diffs, backups, submissions, and receipts remain in the local directories you select. The shipped page loads no third-party scripts, fonts, or tracking resources.
+- **Model processing:** your chosen harness may send the project context it selects to the model provider you configured. That processing is governed by your harness/provider settings, retention policy, and account terms. Project RSI adds no separate destination for that information.
+- **Native conversation mode:** the form uses the selected conversation host's API for follow-up messages and optional draft state. This can disclose review content, decisions, notes, and local run references to that host and its configured services. It is subject to the host's privacy policy; it is not a local-only transport. Use `--transport local` when review submission and storage must stay on your machine.
+- **Other software and publication:** harness telemetry, plugins, connectors, browser extensions, cloud-synced folders, remote workspaces, and user-authorized publishing are outside this toolkit's control. Installing/updating from GitHub downloads public source; the repository's CI runs public source and synthetic fixtures on GitHub runners. Neither is an automatic upload of your private project runs.
+
+The privacy commitment above describes **Project RSI's own shipped behavior**. It is not an unconditional claim that every harness/provider/plugin combination discloses data only to a model company. Review the settings of the environment you choose, send only necessary and appropriately redacted context to models, and keep private run directories out of public repositories and shared/synced folders.
+
+## Disclaimer
+
+This project is provided **AS IS**, under the [MIT License](LICENSE), without warranties of accuracy, fitness for a particular purpose, error prevention, security, confidentiality, or improvement in future agent behavior. It is an independent project and is not endorsed by Google Research or the supported harness vendors.
+
+Agents and models can make mistakes, and approved changes can affect later project behavior. Review proposals and diffs, keep suitable backups, and verify results before relying on them. You are responsible for having permission to process the project data and for choosing the harness, model service, plugins, and storage settings appropriate to it. The maintainers do not control those services or their data handling. Warranty and liability limitations apply as stated in the MIT License and to the extent permitted by applicable law.
 
 ## Validate and contribute
 
